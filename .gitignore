@@ -1,0 +1,6 @@
+/data/in/*
+/data/out/*
+/config/
+/config/*
+/logs/*
+/logs/
