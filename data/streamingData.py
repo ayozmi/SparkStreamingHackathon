@@ -5,7 +5,7 @@ import time
 import os
 import logging
 import sys
-
+from datetime import datetime
 # Get the directory of the current script
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -15,7 +15,8 @@ root_dir = os.path.abspath(os.path.join(current_dir, ".."))
 logging_dir = os.path.join(root_dir, "logs/streamingData")
 if not os.path.exists(logging_dir):
     os.makedirs(logging_dir)
-logging_file = os.path.join(logging_dir, "logs.log")
+date_log = str(datetime.today().strftime('%Y%m%d'))
+logging_file = os.path.join(logging_dir, "logs" + date_log + ".log")
 logging.basicConfig(filename=logging_file, level=logging.WARNING,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
@@ -42,7 +43,7 @@ except Exception as e:
     sys.exit(1)
 
 
-def fetch_reddit_data(subreddit_name, limit=10):
+def fetch_reddit_data(subreddit_name, limit=20):
     data = []
     for submission in reddit.subreddit(subreddit_name).new(limit=limit):
         # If the text is empty, the post is probably an image or video we skip to the next post
@@ -51,15 +52,20 @@ def fetch_reddit_data(subreddit_name, limit=10):
         post = {
             'text': submission.title + ' ' + submission.selftext,
             'created_utc': submission.created_utc,
-            'id': submission.id
+            'id': submission.id,
+            'type': 'post'
         }
+        # post = {
+        #     'text': submission.title,
+        # }
         data.append(post)
         submission.comments.replace_more(limit=0)
         for comment in submission.comments.list():
             comment_data = {
                 'text': comment.body,
                 'created_utc': comment.created_utc,
-                'id': comment.id
+                'id': comment.id,
+                'type': 'comment'
             }
             data.append(comment_data)
     return data
@@ -97,7 +103,7 @@ def send_data(data_s, number_tries, host='localhost', port=9999):
         sys.exit(str(cre))
     except Exception as exce:
         logging.error(f"An unexpected error occurred: {exce}")
-        sys.exit(str(e))
+        sys.exit(str(exce))
     finally:
         s.close()
 
@@ -108,5 +114,5 @@ if __name__ == '__main__':
     while True:
         data = fetch_reddit_data(subreddit)
         send_data(data, 5)
-        # print(data)
-        time.sleep(60)
+        print(data)
+        time.sleep(5)
